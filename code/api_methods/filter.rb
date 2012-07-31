@@ -39,7 +39,7 @@ class Filter < Instance
     return if @params[:scrape_type].nil?
     update_next_dataset_ends
     collect if !@datasets.empty?
-    if @params[:needs_counting]
+    if @params[:needs_counting] && !@datasets.empty?
       @datasets.first.tweets_missed = 0 if @datasets.first.tweets_missed.nil?
       value = (@datasets.first.tweets_missed.to_i+@skipped_last_round.to_i)
       @datasets.first.tweets_missed = value
