@@ -43,7 +43,7 @@ class Filter < Instance
       @datasets.first.tweets_missed = 0 if @datasets.first.tweets_missed.nil?
       value = (@datasets.first.tweets_missed.to_i+@skipped_last_round.to_i)
       @datasets.first.tweets_missed = value
-      @datasets.first.tweets_missed.save!      
+      @datasets.first.save!      
     end
     clean_up_datasets
   end
