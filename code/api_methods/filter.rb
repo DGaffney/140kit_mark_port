@@ -15,6 +15,7 @@ class Filter < Instance
     @skipped_this_round = 0
     @skipped_last_round = 0
     @next_dataset_ends = Time.now
+    @valid_tweets_missed = 0
     @sorted_queue = {}
   end
 
@@ -163,6 +164,8 @@ class Filter < Instance
       @sorted_queue[d_params[:dataset_id]][:geos] = @sorted_queue[d_params[:dataset_id]][:geos]|[geo].reject(&:empty?).select{|g| g[:dataset_id] = d_params[:dataset_id]}
       @sorted_queue[d_params[:dataset_id]][:entities] = @sorted_queue[d_params[:dataset_id]][:entities]|entities.reject(&:empty?).select{|e| e[:dataset_id] = d_params[:dataset_id]}
       @sorted_queue[d_params[:dataset_id]][:coordinates] = @sorted_queue[d_params[:dataset_id]][:coordinates]|coordinates.reject(&:empty?).select{|c| c[:dataset_id] = d_params[:dataset_id]}
+    else 
+      @valid_tweets_missed+=1
     end
   end
   
@@ -250,6 +253,7 @@ class Filter < Instance
           d.tweets_missed = 0 if d.tweets_missed.nil?
           value = (d.tweets_missed.to_i+@skipped_last_round.to_i)
           d.tweets_missed = value
+          d.valid_tweets_missed = (d.tweets_missed.to_i+@valid_tweets_missed.to_i)
           d.save!      
         end
         these_params = d.params
