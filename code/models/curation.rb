@@ -2,7 +2,7 @@ class Curation
   
   include DataMapper::Resource
   property :id, Serial
-  property :name, String, :index => [:curation_researcher_id]
+  property :name, String, :index => [:curation_researcher_id], :length => 400
   property :single_dataset, Boolean, :index => [:researcher_id_single_dataset], :default => true
   property :analyzed, Boolean, :index => [:researcher_id_analyzed], :default => false
   property :created_at, Time, :default => Time.now
