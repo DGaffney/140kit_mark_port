@@ -40,10 +40,10 @@ class Filter < Instance
     update_next_dataset_ends
     collect if !@datasets.empty?
     if @params[:needs_counting]
-      dataset.tweets_missed = 0 if dataset.tweets_missed.nil?
-      value = (dataset.tweets_missed.to_i+@skipped_last_round.to_i)
-      dataset.tweets_missed = value
-      dataset.tweets_missed.save!      
+      @datasets.first.tweets_missed = 0 if @datasets.first.tweets_missed.nil?
+      value = (@datasets.first.tweets_missed.to_i+@skipped_last_round.to_i)
+      @datasets.first.tweets_missed = value
+      @datasets.first.tweets_missed.save!      
     end
     clean_up_datasets
   end
