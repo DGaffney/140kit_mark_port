@@ -39,12 +39,6 @@ class Filter < Instance
     return if @params[:scrape_type].nil?
     update_next_dataset_ends
     collect if !@datasets.empty?
-    if @params[:needs_counting] && !@datasets.empty?
-      @datasets.first.tweets_missed = 0 if @datasets.first.tweets_missed.nil?
-      value = (@datasets.first.tweets_missed.to_i+@skipped_last_round.to_i)
-      @datasets.first.tweets_missed = value
-      @datasets.first.save!      
-    end
     clean_up_datasets
   end
 
@@ -252,6 +246,12 @@ class Filter < Instance
       Dataset.all(:id => finished_datasets.collect(&:id)).update(:scrape_finished => true)
       @datasets -= finished_datasets
       finished_datasets.each do |d|
+        if @params[:needs_counting]
+          d.tweets_missed = 0 if d.tweets_missed.nil?
+          value = (d.tweets_missed.to_i+@skipped_last_round.to_i)
+          d.tweets_missed = value
+          d.save!      
+        end
         these_params = d.params
         these_params[:dataset_id] = d.id
         @params[:params]-=[these_params]
