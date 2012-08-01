@@ -109,7 +109,7 @@ module Sh
     return files.flatten.uniq
   end
   
-  def self.remove(file)
+  def self.rm(file)
     if File.exists?(file)
       if File.file?(file)
         Sh::sh("rm #{file}") 
@@ -118,6 +118,14 @@ module Sh
       end
     end
   end
+  
+
+  def self.compress(file)
+    if File.file?(file)
+      `zip #{file}.zip #{file} -j`
+    elsif File.directory?(file)
+      `zip #{file}.zip #{file} -j`
+    end
+  end
+  
 end
-
-

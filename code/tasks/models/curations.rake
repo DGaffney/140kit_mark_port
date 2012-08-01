@@ -46,10 +46,6 @@ namespace :curation do
   
   def manage_curations(researcher)
     puts "Type 'man curation_id' to see more information about a curation"
-    puts "Type 'archives' to see the archived curations for this researcher"
-    puts "Type 'archive curation_id' to archive a curation"
-    puts "Type 'unarchive curation_id' to reactivate a curation"
-    puts "Type 'finish' at any time to go up one level in management" 
     puts "Type 'exit' at any time to boot out" 
     answer = Sh::clean_gets
     while answer!="finish"
@@ -59,9 +55,8 @@ namespace :curation do
         if !curation.nil?
           puts "From here, you can do all sorts of stuff:"
           puts "Type 'list' to see current stats about this curation"
-          puts "Type 'analyze' to select analysis processes for the curation"
-          puts "Type 'remove function_name' to clear an analysis process for the curation"
-          puts "Type 'clear' to clear all analysis processes for the curation"
+          puts "Type 'export' to export records and models from this curation"
+          puts "Type 'drop' to remove this dataset entirely from the service."
           puts "Type 'finish' to exit the curation and return to management."
           answer = Sh::clean_gets
           while answer!="finish"
@@ -73,65 +68,20 @@ namespace :curation do
               curation.analysis_metadatas.each do |am|
                 puts am.display_terminal
               end
-            elsif answer == "analyze"
-              select_analysis_metadata(curation)
-            elsif answer[0..6] == "remove "
-              remove_analysis_metadata(answer, curation)
-            elsif answer == "clear"
-              curation.analysis_metadatas.each do |am|
-                am.clear
-              end
+            elsif answer == "export"
+              export_curation(curation)
+            elsif answer == "drop"
+              drop_curation(curation)
             end
             answer = Sh::clean_gets
           end
-        end
-      elsif answer=="archives"
-        curations = Curation.all_deleted(:researcher_id => researcher.id)
-        if curations.blank?
-          puts "#{researcher.user_name}'s archive is empty."
-        else
-          curations.each do |curation|
-            puts "ID: #{curation.id} Name: #{curation.name} Date Created: #{curation.created_at} Number of Datasets: #{curation.datasets.length}"
-          end
-          puts "Note: you must unarchive a curation in order to manage it."
-        end
-      elsif answer[0..6]=="archive"
-        puts "Archiving Curation.."
-        curation = Curation.first(:id => answer.gsub("archive ", ""))
-        if curation
-          if curation.researcher == researcher
-            curation.archived = true
-            curation.save
-            puts "Curation successfully archived!"
-          else
-            puts "You can't archive a curation you do not own!"
-          end
-        else
-          puts "Curation not found. Try again."
-        end
-      elsif answer[0..8]=="unarchive"
-        puts "Unarchiving Curation.."
-        curation = Curation.first_deleted(:id => answer.gsub("unarchive ", ""))
-        if curation
-          if curation.researcher == researcher
-            curation.archived = false
-            curation.save
-            puts "Curation successfully unarchived!"
-          else
-            puts "You can't unarchive a curation you do not own!"
-          end
-        else
-          puts "Curation not found. Try again."
         end
       else
         puts "Sorry, I didn't understand your entry. Try again?"
         answer = Sh::clean_gets
       end
       puts "Type 'man curation_id' to see more information about a curation"
-      puts "Type 'archives' to see the archived curations for this researcher"
-      puts "Type 'archive curation_id' to archive a curation"
-      puts "Type 'unarchive curation_id' to reactivate a curation"
-      puts "Type 'finish' at any time to boot out of management"
+      puts "Type 'exit' at any time to boot out" 
       answer = Sh::clean_gets
     end
   end
@@ -157,6 +107,113 @@ namespace :curation do
     curation
   end
   
+  def export_curation(curation)
+    puts "Alright, would you like mysql dumps of the data or TSVs? (type 'mysql' or 'tsv')"
+    data_export_type = Sh::clean_gets
+    while !["tsv", "mysql"].include?(data_export_type)
+      fix = Sh::clean_gets_yes_no("Hrm, I didn't understand.", "One more time:")
+      data_export_type = Sh::clean_gets
+    end
+    puts "What models are you interested in looking at? You can enter any of the following models: 'tweets','users','entities','geos','coordinates'"
+    set = []
+    real_models = ["tweets","users","entities","geos","coordinates"]
+    models = Sh::clean_gets.gsub("'","").split(",")
+    set = set+(models&real_models)
+    answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
+    while set.length < 5 && !answer
+      models = Sh::clean_gets.gsub("'","").split(",")
+      set = set+(models&real_models)
+      answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
+    end
+    answer = Sh::clean_gets_yes_no("Last question: where do you want the results stored? This will be a relative path - right now, it will just be dumped in #{`pwd`}/exports. Want to change that at all?", "Sorry, one more time:")
+    additional_path = ""
+    if answer
+      puts "Alright, change it to what?"
+      answer = false
+      while !answer
+        additional_path = Sh::clean_gets
+        answer = Sh::clean_gets_yes_no("We got #{additional_path.inspect}. Look right?", "Sorry, one more time:")        
+      end
+    end
+    if data_export_type == "tsv"
+      export_tsv(curation, set, additional_path)
+    else
+      export_mysql(curation, set, additional_path)      
+    end
+  end
+
+  def drop_curation(curation)
+    answer_count = 0
+    while answer_count < 2
+      answer = Sh::clean_gets_yes_no("Are you serious? Really? Sure you want to delete ALL the data without saving?")
+      answer_count+=1 if answer
+    end
+    puts "Alllllllright.... I'm deleting now..."
+    [Tweet,User,Entity,Geo,Coordinate].each do |model|
+      DataMapper.repository.adapter.execute("delete from #{model.storage_name} where dataset_id in (#{curation.datasets.collect(&:id).join(",")})")
+    end
+    DataMapper.repository.adapter.execute("delete from #{Dataset.storage_name} where id in (#{curation.datasets.collect(&:id).join(",")})")
+    DataMapper.repository.adapter.execute("delete from #{Curation.storage_name} where id in (#{curation.id})")
+    puts "Well, I did it. It's gone."
+  end
+
+  def export_tsv(curation, set, additional_path="")
+    config = DataMapper.repository.adapter.options
+    curation.datasets.each do |dataset|
+      set.each do |model|
+        model = model.classify.constantize
+        offset = 0
+        limit = 10000
+        finished = false
+        remaining = model.count(:dataset_id => dataset.id)
+        while !finished
+          next_set = remaining>limit ? limit : remaining
+          remaining = (remaining-limit)>0 ? remaining-limit : 0
+          puts "Archiving #{offset} - #{offset+next_set} (#{model})"
+          path = `pwd`.split("\n").first+"/exports/"+additional_path
+          Sh::mkdir(path)
+          filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
+          mysql_section = "mysql -u #{config["user"]} --password='#{config["password"]}' -P #{config["port"]} -h #{config["host"]} #{config["path"].gsub("/", "")} -B -e "
+          mysql_statement = "\"select * from #{model.storage_name} where dataset_id = #{dataset.id} limit #{limit};\""
+          file_push = " | sed -n -e 's/^\"//;s/\"$//;s/\",\"/ /;s/\",\"/\\n/;P' > #{path}#{filename}.tsv"
+          command = "#{mysql_section}#{mysql_statement}#{file_push}"
+          Sh::sh(command)
+          Sh::compress(path+filename+".tsv")
+          Sh::rm(path+filename+".tsv")
+          offset += limit
+          finished = true if remaining == 0
+        end
+      end
+    end
+  end
+  
+  def export_mysql(curation, set, additional_path="")
+    config = DataMapper.repository.adapter.options
+    curation.datasets.each do |dataset|
+      set.each do |model|
+        model = model.classify.constantize
+        offset = 0
+        limit = 10000
+        finished = false
+        remaining = model.count(:dataset_id => dataset.id)
+        while !finished
+          next_set = remaining>limit ? limit : remaining
+          remaining = (remaining-limit)>0 ? remaining-limit : 0
+          puts "Archiving #{offset} - #{offset+next_set} (#{model})"
+          path = `pwd`.split("\n").first+"/exports/"+additional_path
+          Sh::mkdir(path)
+          filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
+          command = "mysqldump -h #{db["host"]} -u #{db["username"]} -w \"dataset_id = #{dataset.id}\" --password=#{db["password"]} #{db["database"]} #{model.storage_name} > #{path}#{filename}.sql"
+          Sh::sh(command)
+          Sh::compress(path+filename+".sql")
+          Sh::rm(path+filename+".sql")
+          offset += limit
+          finished = true if remaining == 0
+        end
+      end
+    end
+  end
+
   def validate_params(scrape_type)
     response = {}
     case scrape_type
