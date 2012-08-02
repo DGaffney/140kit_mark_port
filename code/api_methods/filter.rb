@@ -142,6 +142,7 @@ class Filter < Instance
   end
   
   def match_tweet(tweet, d_params)
+    debugger
     @sorted_queue[d_params[:dataset_id]] = {} if @sorted_queue[d_params[:dataset_id]].nil?
     @sorted_queue[d_params[:dataset_id]][:tweets] = [] if @sorted_queue[d_params[:dataset_id]][:tweets].nil?||@sorted_queue[d_params[:dataset_id]][:tweets].empty?
     @sorted_queue[d_params[:dataset_id]][:geos] = [] if @sorted_queue[d_params[:dataset_id]][:geos].nil?||@sorted_queue[d_params[:dataset_id]][:geos].empty?
@@ -152,7 +153,7 @@ class Filter < Instance
     tweet,user,geo,entities,coordinates = parse_tweet(tweet)
     primary_matches = primary_match(tweet, d_params)
     matches = {}
-    matches[:geocoded] = (d_params[:geocoded]==true && !tweet[:lat].nil? && !tweet[:lon].nil?)
+    matches[:geocoded] = ((d_params[:geocoded]==true && !tweet[:lat].nil? && !tweet[:lon].nil?) || d_params[:geocoded].nil?)
     matches[:matches_some_terms] = d_params[:matches_some_terms].nil? || matches_some_terms(tweet[:text], d_params)
     matches[:matches_all_terms] = d_params[:matches_all_terms].nil? || matches_all_terms(tweet[:text], d_params)
     matches[:regions] = d_params[:regions].nil? || within_bounds(tweet[:lat], tweet[:lon], d_params[:regions])
