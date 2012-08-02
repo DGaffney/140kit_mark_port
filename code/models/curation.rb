@@ -73,7 +73,7 @@ class Curation
   end
 
   def finished?
-    finished_status = self.datasets.collect(&:finished)
+    finished_status = self.datasets.collect(&:scrape_finished)
     return finished_status.uniq.length == 1 && finished_status.uniq.first == true
   end
   
