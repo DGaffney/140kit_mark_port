@@ -71,6 +71,11 @@ class Curation
     Lock.all(:classname => "Curation", :with_id => self.id).destroy
     self.destroy
   end
+
+  def finished?
+    finished_status = self.datasets.collect(&:finished)
+    return finished_status.uniq.length == 1 && finished_status.uniq.first == true
+  end
   
   def still_collecting?
     still_collecting = false
