@@ -17,6 +17,9 @@ class Filter < Instance
     @next_dataset_ends = Time.now
     @valid_tweets_missed = 0
     @sorted_queue = {}
+    super
+    self.instance_type = "streamer"
+    self.save
   end
 
   def filt
