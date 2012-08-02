@@ -113,10 +113,9 @@ def safe_close
   if instance
     case instance.instance_type
     when "worker"
-      instance.store_data(1)
       instance.unlock_all
     when "streamer"
-      instance.store_data(1)
+      instance.select_and_tag_matching_tweets
       instance.unlock_all
     end
     instance.destroy
