@@ -79,21 +79,31 @@ class Filter < Instance
     client.on_error { |message| puts "\nError: #{message}\n"; client.stop }
     if ["track", "locations", "follow"].include?(@params[:scrape_type])
       client.filter(params_for_stream) do |tweet|
-        print "."
-        @queue << tweet
-        select_and_tag_matching_tweets if @queue.length >= @batch_size
-        if @next_dataset_ends
-          client.stop if U.times_up?(@next_dataset_ends)
+        begin
+          print "."
+          @queue << tweet
+          select_and_tag_matching_tweets if @queue.length >= @batch_size
+          if @next_dataset_ends
+            client.stop if U.times_up?(@next_dataset_ends)
+          end
+        rescue
+          select_and_tag_matching_tweets
+          retry
         end
       end
       select_and_tag_matching_tweets
     else
       client.sample do |tweet|
-        print "."
-        @queue << tweet
-        select_and_tag_matching_tweets if @queue.length >= @batch_size
-        if @next_dataset_ends
-          client.stop if U.times_up?(@next_dataset_ends)
+        begin
+          print "."
+          @queue << tweet
+          select_and_tag_matching_tweets if @queue.length >= @batch_size
+          if @next_dataset_ends
+            client.stop if U.times_up?(@next_dataset_ends)
+          end
+        rescue
+          select_and_tag_matching_tweets
+          retry
         end
       end
       select_and_tag_matching_tweets
