@@ -143,7 +143,6 @@ class Filter < Instance
   end
   
   def match_tweet(tweet, d_params)
-    debugger
     @sorted_queue[d_params[:dataset_id]] = {} if @sorted_queue[d_params[:dataset_id]].nil?
     @sorted_queue[d_params[:dataset_id]][:tweets] = [] if @sorted_queue[d_params[:dataset_id]][:tweets].nil?||@sorted_queue[d_params[:dataset_id]][:tweets].empty?
     @sorted_queue[d_params[:dataset_id]][:geos] = [] if @sorted_queue[d_params[:dataset_id]][:geos].nil?||@sorted_queue[d_params[:dataset_id]][:geos].empty?
