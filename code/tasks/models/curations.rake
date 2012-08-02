@@ -263,6 +263,7 @@ namespace :curation do
         while !this_answer
           term = Sh::clean_gets
           this_answer = Sh::clean_gets_yes_no("We got '#{term}'. Is this right?", "Sorry, one more time:")
+          puts "What is the term?" if !this_answer
         end
         terms << term
         answer = Sh::clean_gets_yes_no("Any more terms?.", "Sorry, one more time:")
@@ -280,6 +281,7 @@ namespace :curation do
         while !this_answer
           term = Sh::clean_gets
           this_answer = Sh::clean_gets_yes_no("We got '#{term}'. Is this right?", "Sorry, one more time:")
+          puts "What is the term?" if !this_answer
         end
         terms << term
         answer = Sh::clean_gets_yes_no("Any more terms?.", "Sorry, one more time:")
@@ -304,6 +306,7 @@ namespace :curation do
             location_response = Dataset.valid_params("locations", geocode)
           end
           this_answer = Sh::clean_gets_yes_no("We got '#{geocode}'. Is this right?", "Sorry, one more time:")
+          puts "What is the region?" if !this_answer
         end
         geocodes << geocode
         answer = Sh::clean_gets_yes_no("Any more regions?.", "Sorry, one more time:")
