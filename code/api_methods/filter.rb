@@ -61,7 +61,8 @@ class Filter < Instance
   
   def addable(dataset)
     dataset.scrape_type == @params[:scrape_type] &&
-    @params[:needs_counting].nil?
+    !@datasets.collect{|x| x.params[:needs_counting]}.include?(true) && 
+    (dataset.params[:needs_counting] == false || dataset.params[:needs_counting] == true && @datasets.empty?)
   end
 
   def collect
