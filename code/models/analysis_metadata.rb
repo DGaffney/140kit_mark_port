@@ -6,6 +6,7 @@ class AnalysisMetadata
   property :rest, Boolean, :default => false
   property :curation_id, Integer
   property :analytical_offering_id, Integer
+  property :ready, Boolean
   belongs_to :curation, :child_key => :curation_id
   belongs_to :analytical_offering, :child_key => :analytical_offering_id
   has n, :analytical_offering_variables
