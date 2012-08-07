@@ -18,7 +18,6 @@ class Filter < Instance
     @valid_tweets_missed = 0
     @sorted_queue = {}
     super
-    self.instance_type = "streamer"
     self.save
   end
 
@@ -47,9 +46,9 @@ class Filter < Instance
   end
 
   def collect_params
-    datasets = Dataset.unlocked.all(:scrape_finished => false)
+    datasets = Dataset.unlocked.all(:scrape_finished => false, :scrape_type => ["track", "location", "follow", "sample"])
     datasets.each do |dataset|
-      @params[:scrape_type] = dataset.scrape_type if @params.empty?
+      @params[:scrape_type] = dataset.scrape_type if @params[:scrape_type].nil?
       @params[:params] = [] if @params[:params].nil?
       @params[:params] << dataset.params.merge({:dataset_id => dataset.id}) if addable(dataset)
       @datasets << dataset if addable(dataset)
@@ -95,7 +94,7 @@ class Filter < Instance
         end
       end
       select_and_tag_matching_tweets
-    else
+    elsif @params[:scrape_type] == "sample"
       client.sample do |tweet|
         begin
           print "."
@@ -110,6 +109,39 @@ class Filter < Instance
         end
       end
       select_and_tag_matching_tweets
+    elsif @params[:scrape_type] == "import"
+      datasets = Dataset.all
+      @datasets.each do |dataset|
+        selected_datasets = datasets.collect{|d| dataset.time_range_overlap(d)}
+        selected_datasets.each do |selected_dataset|
+          files = select_tsvs(selected_dataset)
+          files.each do |file|
+            process_file_for_matches(file)
+          end
+        end
+      end
+    end
+  end
+  
+  def select_tsvs(selected_dataset)
+    Sh::ls(DIR+"/exports/Tweet").select do |filename| 
+      filename.split("_")[filename.split("_")[3]].to_i == selected_dataset.id && file.split(".")[1] == "tsv" && file.split(".").last == "zip"
+    end
+  end
+  
+  def process_file_for_matches(file)
+    Sh::decompress(DIR+"/"+file)
+    data = CSV.open(file, :col_sep => "\t", :row_sep => "\n", :quote_char => "\0")
+    first = true
+    keys = []
+    data.each do |row|
+      puts "."
+      if first && !row.empty?
+        keys = row
+        first = false
+      else
+        tweet = Hashie::Mash[Hash[*keys.zip(row).flatten]]
+      end
     end
   end
   

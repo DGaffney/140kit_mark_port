@@ -82,4 +82,16 @@ class Dataset
   def internal_params_label
     return self.params
   end
+  
+  def time_range_overlap(other_dataset)
+    if self.params[:time] == -1
+      if other_dataset.params[:time] == -1
+        return (self.created_at.to_i..Time.now.to_i).include?(other_dataset.created_at.to_i) || (self.created_at.to_i..Time.now.to_i).include?(Time.now.to_i)
+      else
+        return (self.created_at.to_i..Time.now.to_i).include?(other_dataset.created_at.to_i) || (self.created_at.to_i..Time.now.to_i).include?((other_dataset.created_at+other_dataset.params[:time]).to_i)
+      end
+    else
+      return (self.created_at.to_i..self.created_at.to_i+self.params[:time]).include?(other_dataset.created_at.to_i) || (self.created_at.to_i..self.created_at.to_i+self.params[:time]).include?((other_dataset.created_at+other_dataset.params[:time]).to_i)
+    end 
+  end
 end

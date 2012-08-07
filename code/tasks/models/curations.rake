@@ -170,12 +170,12 @@ namespace :curation do
           next_set = remaining>limit ? limit : remaining
           remaining = (remaining-limit)>0 ? remaining-limit : 0
           puts "Archiving #{offset} - #{offset+next_set} (#{model})"
-          path = `pwd`.split("\n").first+"/exports/"+additional_path
+          path = `pwd`.split("\n").first+"/exports/"+additional_path+"/"+model.to_s
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
           mysql_section = "mysql -u #{config["user"]} --password='#{config["password"]}' -P #{config["port"]} -h #{config["host"]} #{config["path"].gsub("/", "")} -B -e "
           mysql_statement = "\"select * from #{model.storage_name} where dataset_id = #{dataset.id} limit #{limit};\""
-          file_push = " | sed -n -e 's/^\"//;s/\"$//;s/\",\"/ /;s/\",\"/\\n/;P' > #{path}#{filename}.tsv"
+          file_push = " | sed -n -e 's/^\"//;s/\"$//;s/\",\"/ /;s/\",\"/\\n/;P' > #{path}/#{filename}.tsv"
           command = "#{mysql_section}#{mysql_statement}#{file_push}"
           Sh::sh(command)
           Sh::compress(path+filename+".tsv")
