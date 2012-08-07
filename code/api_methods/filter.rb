@@ -46,7 +46,7 @@ class Filter < Instance
   end
 
   def collect_params
-    datasets = Dataset.unlocked.all(:scrape_finished => false, :scrape_type => ["track", "location", "follow", "sample"])
+    datasets = Dataset.unlocked.all(:scrape_finished => false, :scrape_type => ["track", "location", "follow", "sample", "import"])
     datasets.each do |dataset|
       @params[:scrape_type] = dataset.scrape_type if @params[:scrape_type].nil?
       @params[:params] = [] if @params[:params].nil?
@@ -116,7 +116,7 @@ class Filter < Instance
       attrs = Tweet.attributes-useless_attrs
       tweets = Tweet.all(:unique => true, :limit => limit, :offset => offset, :fields => attrs)
       while !tweets.empty?
-        puts "Processing corpus of Twitter data for copy into new dataset..."
+        puts "Processing corpus of Twitter data for copy into importing dataset..."
         users = User.all(:twitter_id => tweets.collect(&:user_id))
         entities = Entity.all(:twitter_id => tweets.collect(&:twitter_id))
         geos = Geo.all(:twitter_id => tweets.collect(&:twitter_id))
@@ -219,8 +219,7 @@ class Filter < Instance
       @sorted_queue[d_params[:dataset_id]][:geos] = @sorted_queue[d_params[:dataset_id]][:geos]|[geo].reject(&:empty?).select{|g| g[:dataset_id] = d_params[:dataset_id]}
       @sorted_queue[d_params[:dataset_id]][:entities] = @sorted_queue[d_params[:dataset_id]][:entities]|entities.reject(&:empty?).select{|e| e[:dataset_id] = d_params[:dataset_id]}
       @sorted_queue[d_params[:dataset_id]][:coordinates] = @sorted_queue[d_params[:dataset_id]][:coordinates]|coordinates.reject(&:empty?).select{|c| c[:dataset_id] = d_params[:dataset_id]}
-    else 
-      debugger
+    else
       @valid_tweets_missed+=1
     end
   end
@@ -228,7 +227,7 @@ class Filter < Instance
   def primary_match(tweet, d_params)
     case @params[:scrape_type]
     when "track"
-      return tweet[:text].downcase.include?(d_params[:clean_params])
+      return tweet[:text].downcase.include?(d_params[:clean_params].downcase)
     when "locations"
       return within_bounds(tweet[:lat], tweet[:lon], [d_params[:clean_params]])
     when "follow"
