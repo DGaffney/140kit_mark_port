@@ -24,7 +24,7 @@ class Dataset
   end
   
   def self.scrape_types
-    ['track', 'follow', 'locations', 'sample']
+    ['track', 'follow', 'locations', 'sample', 'import']
   end
   
   def self.valid_params(scrape_type, params)
