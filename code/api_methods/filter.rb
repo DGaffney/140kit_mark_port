@@ -228,7 +228,7 @@ class Filter < Instance
   def primary_match(tweet, d_params)
     case @params[:scrape_type]
     when "track"
-      return tweet[:text].include?(d_params[:clean_params])
+      return tweet[:text].downcase.include?(d_params[:clean_params])
     when "locations"
       return within_bounds(tweet[:lat], tweet[:lon], [d_params[:clean_params]])
     when "follow"
