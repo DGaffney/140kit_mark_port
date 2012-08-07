@@ -110,6 +110,7 @@ class Filter < Instance
       end
       select_and_tag_matching_tweets
     elsif @params[:scrape_type] == "import"
+      debugger
       offset = 0
       limit = 1000
       useless_attrs = [:id]
