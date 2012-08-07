@@ -273,7 +273,7 @@ namespace :curation do
         ids_correct = false
         while !ids_correct
           puts "Enter them now:"
-          id_raw= Sh::clean_gets.split(",")
+          id_raw= Sh::clean_gets.split(",").collect(&:to_i)
           ids = Dataset.all(:fields => [:id], :id => id_raw).collect(&:id)
           ids_correct = Sh::clean_gets_yes_no("We got #{ids.inspect}. Sound right?", "Sorry, one more time:")
         end

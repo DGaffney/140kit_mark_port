@@ -63,8 +63,8 @@ class Filter < Instance
   
   def addable(dataset)
     dataset.scrape_type == @params[:scrape_type] &&
-    !@datasets.collect{|x| x.params[:needs_counting]}.include?(true) && 
-    (dataset.params[:needs_counting] == false || dataset.params[:needs_counting] == true && @datasets.empty?)
+    (!@datasets.collect{|x| x.params[:needs_counting]}.include?(true) || !@datasets.collect{|x| x.scrape_type == "import"}.include?(true)) && 
+    (dataset.params[:needs_counting] == false || (dataset.params[:needs_counting] == true && @datasets.empty?) || (dataset.scrape_type == "import" && @datasets.empty?))
   end
 
   def collect
@@ -112,9 +112,14 @@ class Filter < Instance
     elsif @params[:scrape_type] == "import"
       offset = 0
       limit = 1000
-      useless_attrs = [:id,:dataset_id]
+      useless_attrs = [:id]
       attrs = Tweet.attributes-useless_attrs
-      tweets = Tweet.all(:unique => true, :limit => limit, :offset => offset, :fields => attrs)
+      tweets = []
+      if @params[:params].first[:exclude_ids]
+        tweets = Tweet.all(:unique => true, :limit => limit, :offset => offset, :fields => attrs, :dataset_id.not => @params[:params].first[:exclude_ids], :created_at.gte => @datasets.first.created_at, :created_at.lte => @datasets.first.created_at+@params.first[:time])
+      else
+        tweets = Tweet.all(:unique => true, :limit => limit, :offset => offset, :fields => attrs, :created_at.gte => @datasets.first.created_at, :created_at.lte => @datasets.first.created_at+@params.first[:time])
+      end
       while !tweets.empty?
         puts "Processing corpus of Twitter data for copy into importing dataset..."
         users = User.all(:twitter_id => tweets.collect(&:user_id))
@@ -126,20 +131,16 @@ class Filter < Instance
           these_entities = entities.collect{|e| Hashie::Mash[e.attributes] if e.twitter_id == tweet.twitter_id}.compact
           geo = geos.collect{|g| Hashie::Mash[g.attributes] if g.twitter_id == tweet.twitter_id}.compact.first
           these_coordinates = coordinates.collect{|c| Hashie::Mash[c.attributes] if c.twitter_id == tweet.twitter_id}.compact
-          @queue.each do |tweet|
-            @params[:params].each do |d_params|
-              match_tweet(tweet, d_params, user, these_geos, these_entities, these_coordinates)
-            end
-          end
-          tweets = [];users = [];entities = [];coordinates = [];geos = []
+          match_importing_tweet(tweet, @params[:params].first, user, these_geos, these_entities, these_coordinates)
+          tmp_tweets = [];users = [];entities = [];coordinates = [];geos = []
           @sorted_queue.each_pair do |k,v|
-            tweets = tweets|v[:tweets]
+            tmp_tweets = tmp_tweets|v[:tweets]
             users = users|v[:users]
             coordinates = coordinates|v[:coordinates]
             geos = geos|v[:geos]
             entities = entities|v[:entities]
           end
-          Tweet.save_all(tweets)
+          Tweet.save_all(tmp_tweets)
           User.save_all(users)
           Entity.save_all(entities)
           Geo.save_all(geos)
@@ -148,9 +149,17 @@ class Filter < Instance
           @tmp_queue = {}
           @queue = []
         end
+        offset+=limit
+        if @params[:params].first[:exclude_ids]
+          tweets = Tweet.all(:unique => true, :limit => limit, :offset => offset, :fields => attrs, :dataset_id.not => @params[:params].first[:exclude_ids], :created_at.gte => @datasets.first.created_at, :created_at.lte => @datasets.first.created_at+@params.first[:time])
+        else
+          tweets = Tweet.all(:unique => true, :limit => limit, :offset => offset, :fields => attrs, :created_at.gte => @datasets.first.created_at, :created_at.lte => @datasets.first.created_at+@params.first[:time])
+        end
       end
     end
   end
+  
+  (dataset.created_at.to_i..(dataset.created_at+d_params[:time]).to_i).include?(tweet[:created_at].to_i)
   
   def params_for_stream
     {@params[:scrape_type] => @params[:params].collect{|p| p[:clean_params]}}
@@ -193,8 +202,8 @@ class Filter < Instance
     @tmp_queue = {}
     @queue = []
   end
-  
-  def match_tweet(tweet, d_params, user=nil, geo=nil, entities=nil, coordinates=nil)
+
+  def match_importing_tweet(tweet, d_params, user=nil, geo=nil, entities=nil, coordinates=nil)
     @sorted_queue[d_params[:dataset_id]] = {} if @sorted_queue[d_params[:dataset_id]].nil?
     @sorted_queue[d_params[:dataset_id]][:tweets] = [] if @sorted_queue[d_params[:dataset_id]][:tweets].nil?||@sorted_queue[d_params[:dataset_id]][:tweets].empty?
     @sorted_queue[d_params[:dataset_id]][:geos] = [] if @sorted_queue[d_params[:dataset_id]][:geos].nil?||@sorted_queue[d_params[:dataset_id]][:geos].empty?
@@ -202,9 +211,32 @@ class Filter < Instance
     @sorted_queue[d_params[:dataset_id]][:users] = [] if @sorted_queue[d_params[:dataset_id]][:users].nil?||@sorted_queue[d_params[:dataset_id]][:users].empty?
     @sorted_queue[d_params[:dataset_id]][:entities] = [] if @sorted_queue[d_params[:dataset_id]][:entities].nil?||@sorted_queue[d_params[:dataset_id]][:entities].empty?
     primary_matches = false
-    if user.nil?
-      tweet,user,geo,entities,coordinates = parse_tweet(tweet)
+    primary_matches = primary_match(tweet, d_params)
+    matches = {}
+    matches[:geocoded] = ((d_params[:geocoded]==true && !tweet[:lat].nil? && !tweet[:lon].nil?) || d_params[:geocoded].nil?)
+    matches[:matches_some_terms] = d_params[:matches_some_terms].nil? || matches_some_terms(tweet[:text], d_params)
+    matches[:matches_all_terms] = d_params[:matches_all_terms].nil? || matches_all_terms(tweet[:text], d_params)
+    matches[:regions] = d_params[:regions].nil? || within_bounds(tweet[:lat], tweet[:lon], d_params[:regions])
+    if (matches.keys.length==matches.values.count(true)) && primary_matches
+      tweet[:dataset_id] = d_params[:dataset_id]
+      @sorted_queue[d_params[:dataset_id]][:tweets] << tweet
+      user[:dataset_id] = d_params[:dataset_id]
+      @sorted_queue[d_params[:dataset_id]][:users] << user
+      @sorted_queue[d_params[:dataset_id]][:geos] = @sorted_queue[d_params[:dataset_id]][:geos]|[geo].reject(&:empty?).select{|g| g[:dataset_id] = d_params[:dataset_id]}
+      @sorted_queue[d_params[:dataset_id]][:entities] = @sorted_queue[d_params[:dataset_id]][:entities]|entities.reject(&:empty?).select{|e| e[:dataset_id] = d_params[:dataset_id]}
+      @sorted_queue[d_params[:dataset_id]][:coordinates] = @sorted_queue[d_params[:dataset_id]][:coordinates]|coordinates.reject(&:empty?).select{|c| c[:dataset_id] = d_params[:dataset_id]}
     end
+  end
+  
+  def match_tweet(tweet, d_params)
+    @sorted_queue[d_params[:dataset_id]] = {} if @sorted_queue[d_params[:dataset_id]].nil?
+    @sorted_queue[d_params[:dataset_id]][:tweets] = [] if @sorted_queue[d_params[:dataset_id]][:tweets].nil?||@sorted_queue[d_params[:dataset_id]][:tweets].empty?
+    @sorted_queue[d_params[:dataset_id]][:geos] = [] if @sorted_queue[d_params[:dataset_id]][:geos].nil?||@sorted_queue[d_params[:dataset_id]][:geos].empty?
+    @sorted_queue[d_params[:dataset_id]][:coordinates] = [] if @sorted_queue[d_params[:dataset_id]][:coordinates].nil?||@sorted_queue[d_params[:dataset_id]][:coordinates].empty?
+    @sorted_queue[d_params[:dataset_id]][:users] = [] if @sorted_queue[d_params[:dataset_id]][:users].nil?||@sorted_queue[d_params[:dataset_id]][:users].empty?
+    @sorted_queue[d_params[:dataset_id]][:entities] = [] if @sorted_queue[d_params[:dataset_id]][:entities].nil?||@sorted_queue[d_params[:dataset_id]][:entities].empty?
+    primary_matches = false
+    tweet,user,geo,entities,coordinates = parse_tweet(tweet)
     primary_matches = primary_match(tweet, d_params)
     matches = {}
     matches[:geocoded] = ((d_params[:geocoded]==true && !tweet[:lat].nil? && !tweet[:lon].nil?) || d_params[:geocoded].nil?)
