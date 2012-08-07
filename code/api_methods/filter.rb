@@ -121,36 +121,27 @@ class Filter < Instance
       else
         tweets = Tweet.all(:unique => true, :limit => limit, :offset => offset, :fields => attrs, :created_at.gte => @datasets.first.created_at, :created_at.lte => @datasets.first.created_at+@params[:params].first[:time])
       end
+      puts "Processing corpus of Twitter data for copy into importing dataset..."
       while !tweets.empty?
-        puts "Processing corpus of Twitter data for copy into importing dataset..."
+        print "."
         users = User.all(:twitter_id => tweets.collect(&:user_id))
         entities = Entity.all(:twitter_id => tweets.collect(&:twitter_id))
         geos = Geo.all(:twitter_id => tweets.collect(&:twitter_id))
         coordinates = Coordinate.all(:twitter_id => tweets.collect(&:twitter_id))
         tweets.each do |tweet|
+          tweet = Hashie::Mash[tweet.attributes]
           user = users.collect{|u| Hashie::Mash[u.attributes] if u.twitter_id == tweet.user_id}.compact.first
           these_entities = entities.collect{|e| Hashie::Mash[e.attributes] if e.twitter_id == tweet.twitter_id}.compact
           geo = geos.collect{|g| Hashie::Mash[g.attributes] if g.twitter_id == tweet.twitter_id}.compact.first
           these_coordinates = coordinates.collect{|c| Hashie::Mash[c.attributes] if c.twitter_id == tweet.twitter_id}.compact
           match_importing_tweet(tweet, @params[:params].first, user, geo, these_entities, these_coordinates)
-          tmp_tweets = [];tmp_users = [];tmp_entities = [];tmp_coordinates = [];tmp_geos = []
-          @sorted_queue.each_pair do |k,v|
-            print "."
-            tmp_tweets = tmp_tweets|v[:tweets]
-            users = tmp_users|v[:users]
-            coordinates = tmp_coordinates|v[:coordinates]
-            geos = tmp_geos|v[:geos]
-            entities = tmp_entities|v[:entities]
-          end
           Thread.new do
-            Tweet.save_all(tweets)
-            User.save_all(users)
-            Entity.save_all(entities)
-            Geo.save_all(geos)
-            Coordinate.save_all(coordinates)
+            (Tweet.save_all(@sorted_queue.values.first[:tweets]); @sorted_queue.values.first[:tweets] = []) if @sorted_queue.values.first[:tweets].length > 100
+            (User.save_all(@sorted_queue.values.first[:users]); @sorted_queue.values.first[:users] = []) if @sorted_queue.values.first[:users].length > 100
+            (Entity.save_all(@sorted_queue.values.first[:entities]); @sorted_queue.values.first[:entities] = []) if @sorted_queue.values.first[:entities].length > 100
+            (Geo.save_all(@sorted_queue.values.first[:geos]); @sorted_queue.values.first[:geos] = []) if @sorted_queue.values.first[:geos].length > 100
+            (Coordinate.save_all(@sorted_queue.values.first[:coordinates]); @sorted_queue.values.first[:coordinates] = []) if @sorted_queue.values.first[:coordinates].length > 100
           end
-          @sorted_queue = {}
-          @tmp_queue = {}
         end
         offset+=limit
         if @params[:params].first[:exclude_ids]
@@ -224,8 +215,8 @@ class Filter < Instance
       user[:dataset_id] = d_params[:dataset_id]
       @sorted_queue[d_params[:dataset_id]][:users] << user
       @sorted_queue[d_params[:dataset_id]][:geos] = @sorted_queue[d_params[:dataset_id]][:geos]|[geo].reject(&:empty?).select{|g| g[:dataset_id] = d_params[:dataset_id]}
-      @sorted_queue[d_params[:dataset_id]][:entities] = @sorted_queue[d_params[:dataset_id]][:entities]|entities.reject(&:empty?).select{|e| e[:dataset_id] = d_params[:dataset_id]}
-      @sorted_queue[d_params[:dataset_id]][:coordinates] = @sorted_queue[d_params[:dataset_id]][:coordinates]|coordinates.reject(&:empty?).select{|c| c[:dataset_id] = d_params[:dataset_id]}
+      @sorted_queue[d_params[:dataset_id]][:entities] = @sorted_queue[d_params[:dataset_id]][:entities]|entities.select{|e| e[:dataset_id] = d_params[:dataset_id]}
+      @sorted_queue[d_params[:dataset_id]][:coordinates] = @sorted_queue[d_params[:dataset_id]][:coordinates]|coordinates.select{|c| c[:dataset_id] = d_params[:dataset_id]}
     end
   end
   
