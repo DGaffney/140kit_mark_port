@@ -220,6 +220,7 @@ class Filter < Instance
       @sorted_queue[d_params[:dataset_id]][:entities] = @sorted_queue[d_params[:dataset_id]][:entities]|entities.reject(&:empty?).select{|e| e[:dataset_id] = d_params[:dataset_id]}
       @sorted_queue[d_params[:dataset_id]][:coordinates] = @sorted_queue[d_params[:dataset_id]][:coordinates]|coordinates.reject(&:empty?).select{|c| c[:dataset_id] = d_params[:dataset_id]}
     else 
+      debugger
       @valid_tweets_missed+=1
     end
   end
@@ -309,7 +310,7 @@ class Filter < Instance
           value = (d.tweets_missed.to_i+@skipped_last_round.to_i-d.tweets_missed.to_i)
           d.tweets_missed = value
           d.valid_tweets_missed = @valid_tweets_missed.to_i
-          d.save!      
+          d.save!
         end
         these_params = d.params
         these_params[:dataset_id] = d.id

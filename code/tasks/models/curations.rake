@@ -26,6 +26,9 @@ namespace :curation do
         answer = Sh::clean_gets
       end
       params[:time] = answer.to_i
+    elsif dataset.scrape_type == "import"
+      dataset.created_at = clean_params[:start_time]
+      params[:time] = clean_params[:end_time]-clean_params[:start_time]
     end
     dataset.params = params
     dataset.save!
@@ -248,8 +251,23 @@ namespace :curation do
       puts "You don't have to input params for a random sample - skipping parameter setting"
       response = {:clean_params => " "}
     when "import"
-      puts "The simple decisions for the API streaming choices do not apply here - to make those decisions, simply fill out the advanced decisions."
-      response = {:clean_params => " "}
+      puts "What time range are you interested in? To enter this, please enter times like this: #{(Time.now-3600*24*5).strftime("%Y-%m-%d %H:%M:%S")} to #{Time.now.strftime("%Y-%m-%d %H:%M:%S")}"
+      finalized = false
+      start_time = nil
+      end_time = nil
+      while !finalized
+        answer = Sh::clean_gets
+        start_time = Time.parse(answer.split(" to ").first) rescue nil
+        end_time = Time.parse(answer.split(" to ").last) rescue nil
+        while start_time.nil? || end_time.nil?
+          puts "Sorry, we didn't correctly interpret your time range. Please try again:"
+          answer = Sh::clean_gets
+          start_time = Time.parse(answer.split(" to ").first) rescue nil
+          end_time = Time.parse(answer.split(" to ").last) rescue nil
+        end
+        finalized = Sh::clean_gets_yes_no("We got #{start_time.strftime("%Y-%m-%d %H:%M:%S")} to #{end_time.strftime("%Y-%m-%d %H:%M:%S")}. Is that correct?", "Sorry, one more time:")
+      end
+      response = {:clean_params => " ", :start_time => start_time, :end_time => end_time}
     end
     puts "Alright, so here's the advanced settings:"
     answer = Sh::clean_gets_yes_no("Do you only want to collected geocoded data?", "Sorry, one more time:")
