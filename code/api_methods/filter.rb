@@ -112,7 +112,7 @@ class Filter < Instance
     elsif @params[:scrape_type] == "import"
       debugger
       offset = 0
-      limit = 1000
+      limit = 100
       useless_attrs = [:id]
       attrs = Tweet.attributes-useless_attrs
       tweets = []
@@ -129,6 +129,7 @@ class Filter < Instance
         geos = Geo.all(:twitter_id => tweets.collect(&:twitter_id))
         coordinates = Coordinate.all(:twitter_id => tweets.collect(&:twitter_id))
         tweets.each do |tweet|
+          print ","
           tweet = Hashie::Mash[tweet.attributes]
           user = users.collect{|u| Hashie::Mash[u.attributes] if u.twitter_id == tweet.user_id}.compact.first
           these_entities = entities.collect{|e| Hashie::Mash[e.attributes] if e.twitter_id == tweet.twitter_id}.compact
