@@ -164,7 +164,7 @@ class Filter < Instance
       if @skipped_last_round >= @skipped_this_round
         dataset.tweets_missed = 0 if dataset.tweets_missed.nil?
         value = (dataset.tweets_missed.to_i+@skipped_last_round.to_i)
-        dataset.tweets_missed = value
+        dataset.tweets_missed = skip_count
         dataset.tweets_missed.save!      
       end
     end
@@ -306,9 +306,9 @@ class Filter < Instance
       finished_datasets.each do |d|
         if @params[:needs_counting]
           d.tweets_missed = 0 if d.tweets_missed.nil?
-          value = (d.tweets_missed.to_i+@skipped_last_round.to_i)
+          value = (d.tweets_missed.to_i+@skipped_last_round.to_i-d.tweets_missed.to_i)
           d.tweets_missed = value
-          d.valid_tweets_missed = (d.tweets_missed.to_i+@valid_tweets_missed.to_i)
+          d.valid_tweets_missed = @valid_tweets_missed.to_i
           d.save!      
         end
         these_params = d.params

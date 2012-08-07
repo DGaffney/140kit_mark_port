@@ -247,6 +247,9 @@ namespace :curation do
     when "sample"
       puts "You don't have to input params for a random sample - skipping parameter setting"
       response = {:clean_params => " "}
+    when "import"
+      puts "The simple decisions for the API streaming choices do not apply here - to make those decisions, simply fill out the advanced decisions."
+      response = {:clean_params => " "}
     end
     puts "Alright, so here's the advanced settings:"
     answer = Sh::clean_gets_yes_no("Do you only want to collected geocoded data?", "Sorry, one more time:")
