@@ -140,11 +140,13 @@ class Filter < Instance
             geos = geos|v[:geos]
             entities = entities|v[:entities]
           end
-          Tweet.save_all(tmp_tweets)
-          User.save_all(users)
-          Entity.save_all(entities)
-          Geo.save_all(geos)
-          Coordinate.save_all(coordinates)
+          Thread.new do |t|
+            Tweet.save_all(tweets)
+            User.save_all(users)
+            Entity.save_all(entities)
+            Geo.save_all(geos)
+            Coordinate.save_all(coordinates)
+          end
           @sorted_queue = {}
           @tmp_queue = {}
           @queue = []
@@ -191,11 +193,13 @@ class Filter < Instance
       geos = geos|v[:geos]
       entities = entities|v[:entities]
     end
-    Tweet.save_all(tweets)
-    User.save_all(users)
-    Entity.save_all(entities)
-    Geo.save_all(geos)
-    Coordinate.save_all(coordinates)
+    Thread.new do |t|
+      Tweet.save_all(tweets)
+      User.save_all(users)
+      Entity.save_all(entities)
+      Geo.save_all(geos)
+      Coordinate.save_all(coordinates)
+    end
     @sorted_queue = {}
     @tmp_queue = {}
     @queue = []
