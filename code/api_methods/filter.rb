@@ -140,7 +140,7 @@ class Filter < Instance
             geos = geos|v[:geos]
             entities = entities|v[:entities]
           end
-          Thread.new do |t|
+          fork do |t|
             Tweet.save_all(tweets)
             User.save_all(users)
             Entity.save_all(entities)
@@ -193,7 +193,7 @@ class Filter < Instance
       geos = geos|v[:geos]
       entities = entities|v[:entities]
     end
-    Thread.new do |t|
+    fork do |t|
       Tweet.save_all(tweets)
       User.save_all(users)
       Entity.save_all(entities)
