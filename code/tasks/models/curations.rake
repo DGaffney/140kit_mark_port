@@ -267,7 +267,19 @@ namespace :curation do
         end
         finalized = Sh::clean_gets_yes_no("We got #{start_time.strftime("%Y-%m-%d %H:%M:%S")} to #{end_time.strftime("%Y-%m-%d %H:%M:%S")}. Is that correct?", "Sorry, one more time:")
       end
+      answer = Sh::clean_gets_yes_no("Are there any datasets you wish to exclude? Enter the ID's, separated by commas (You can also look at existing datasets by running rake curation:manage)", "Sorry, one more time:")
+      ids = []
+      if answer
+        ids_correct = false
+        while !ids_correct
+          puts "Enter them now:"
+          id_raw= Sh::clean_gets.split(",")
+          ids = Dataset.all(:fields => [:id], :id => id_raw).collect(&:id)
+          ids_correct = Sh::clean_gets_yes_no("We got #{ids.inspect}. Sound right?", "Sorry, one more time:")
+        end
+      end
       response = {:clean_params => " ", :start_time => start_time, :end_time => end_time}
+      response[:exclude_ids] = ids if !ids.empty?
     end
     puts "Alright, so here's the advanced settings:"
     answer = Sh::clean_gets_yes_no("Do you only want to collected geocoded data?", "Sorry, one more time:")
