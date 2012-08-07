@@ -134,6 +134,7 @@ class Filter < Instance
           match_importing_tweet(tweet, @params[:params].first, user, these_geos, these_entities, these_coordinates)
           tmp_tweets = [];users = [];entities = [];coordinates = [];geos = []
           @sorted_queue.each_pair do |k,v|
+            print "."
             tmp_tweets = tmp_tweets|v[:tweets]
             users = users|v[:users]
             coordinates = coordinates|v[:coordinates]
@@ -147,7 +148,6 @@ class Filter < Instance
             Geo.save_all(geos)
             Coordinate.save_all(coordinates)
           end
-          # Process.waitpid(pid, Process::WNOHANG)
           @sorted_queue = {}
           @tmp_queue = {}
           @queue = []
@@ -201,7 +201,6 @@ class Filter < Instance
       Geo.save_all(geos)
       Coordinate.save_all(coordinates)
     end
-    # Process.waitpid(pid, Process::WNOHANG) 
     @sorted_queue = {}
     @tmp_queue = {}
     @queue = []
