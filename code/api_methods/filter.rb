@@ -159,8 +159,6 @@ class Filter < Instance
     end
   end
   
-  (dataset.created_at.to_i..(dataset.created_at+d_params[:time]).to_i).include?(tweet[:created_at].to_i)
-  
   def params_for_stream
     {@params[:scrape_type] => @params[:params].collect{|p| p[:clean_params]}}
   end
