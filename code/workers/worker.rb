@@ -9,7 +9,7 @@ class Worker < Instance
   @@rest_analytics = ["retweet_graph"]
   $drop_interval = lambda{Setting.first(:name => "drop_interval").value} rescue 60*60*24*2
   $hide_interval = lambda{Setting.first(:name => "hide_interval").value} rescue 60*60*24*7*4
-  $clean_orphan_interval = lambda{Setting.first(:name => "clean_orphan_interval").value} rescue 900
+  $clean_orphan_interval = lambda{Setting.first(:name => "clean_orphan_interval").value} rescue 10
   def initialize
     super
     self.instance_type = "worker"

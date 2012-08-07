@@ -20,6 +20,7 @@ require 'tweetstream'
 require 'iconv'
 require 'unicode'
 require 'csv'
+require 'hashie'
 #Encoding.default_external = Encoding::ISO_8859_1
 #Encoding.default_internal = Encoding::ISO_8859_1
 DIR = File.dirname(__FILE__)
