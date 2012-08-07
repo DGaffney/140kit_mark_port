@@ -140,13 +140,14 @@ class Filter < Instance
             geos = geos|v[:geos]
             entities = entities|v[:entities]
           end
-          fork do |t|
+          pid = fork do
             Tweet.save_all(tweets)
             User.save_all(users)
             Entity.save_all(entities)
             Geo.save_all(geos)
             Coordinate.save_all(coordinates)
           end
+          Process.waitpid(pid, Process::WNOHANG)
           @sorted_queue = {}
           @tmp_queue = {}
           @queue = []
@@ -193,13 +194,14 @@ class Filter < Instance
       geos = geos|v[:geos]
       entities = entities|v[:entities]
     end
-    fork do |t|
+    pid = fork do
       Tweet.save_all(tweets)
       User.save_all(users)
       Entity.save_all(entities)
       Geo.save_all(geos)
       Coordinate.save_all(coordinates)
     end
+    Process.waitpid(pid, Process::WNOHANG) 
     @sorted_queue = {}
     @tmp_queue = {}
     @queue = []
