@@ -121,7 +121,7 @@ namespace :curation do
     puts "Alright, would you like mysql dumps of the data or TSVs? (type 'mysql' or 'tsv')"
     data_export_type = Sh::clean_gets
     while !["tsv", "mysql"].include?(data_export_type)
-      fix = Sh::clean_gets_yes_no("Hrm, I didn't understand.", "One more time:")
+      puts "Hrm, I didn't understand. Try again?"
       data_export_type = Sh::clean_gets
     end
     puts "What models are you interested in looking at? You can enter any of the following models: 'tweets','users','entities','geos','coordinates'"
@@ -135,7 +135,7 @@ namespace :curation do
       set = set+(models&real_models)
       answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
     end
-    answer = Sh::clean_gets_yes_no("Last question: where do you want the results stored? This will be a relative path - right now, it will just be dumped in #{`pwd`}/exports. Want to change that at all?", "Sorry, one more time:")
+    answer = Sh::clean_gets_yes_no("Last question: where do you want the results stored? This will be a relative path - right now, it will just be dumped in #{`pwd`.strip}/exports. Want to change that at all?", "Sorry, one more time:")
     additional_path = ""
     if answer
       puts "Alright, change it to what? (Note: this will be relative to the current directory, or static if you prepend with a / on the path.)"
@@ -180,7 +180,7 @@ namespace :curation do
           next_set = remaining>limit ? limit : remaining
           remaining = (remaining-limit)>0 ? remaining-limit : 0
           puts "Archiving #{offset} - #{offset+next_set} (#{model})"
-          path = additional_path == "" ? additional_path+"/"+model.to_s+"/" : `pwd`.split("\n").first+"/exports/"+additional_path+"/"+model.to_s+"/"
+          path = additional_path == "" ? `pwd`.strip+"/exports/"+additional_path+"/"+model.to_s+"/" : additional_path+"/"+model.to_s+"/" 
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
           mysql_section = "mysql -u #{config["user"]} --password='#{config["password"]}' -P #{config["port"]} -h #{config["host"]} #{config["path"].gsub("/", "")} -B -e "
@@ -211,7 +211,7 @@ namespace :curation do
           next_set = remaining>limit ? limit : remaining
           remaining = (remaining-limit)>0 ? remaining-limit : 0
           puts "Archiving #{offset} - #{offset+next_set} (#{model})"
-          path = additional_path == "" ? additional_path+"/"+model.to_s+"/" : `pwd`.split("\n").first+"/exports/"+additional_path+"/"+model.to_s+"/"
+          path = additional_path == "" ? `pwd`.strip+"/exports/"+additional_path+"/"+model.to_s+"/" : additional_path+"/"+model.to_s+"/" 
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
           command = "mysqldump -h #{config["host"]} -u #{config["user"]} -w \"dataset_id = #{dataset.id}\" --password=#{config["password"]} -P #{config["port"]} #{config["path"].gsub("/", "")} #{model.storage_name} > #{path}#{filename}.sql"
