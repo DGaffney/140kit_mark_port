@@ -73,6 +73,11 @@ namespace :curation do
               end
             elsif answer == "export"
               export_curation(curation)
+              puts "Job's done!"
+              puts "Type 'list' to see current stats about this curation"
+              puts "Type 'export' to export records and models from this curation"
+              puts "Type 'drop' to remove this dataset entirely from the service."
+              puts "Type 'finish' to exit the curation and return to management."
             elsif answer == "drop"
               drop_curation(curation)
             else
@@ -209,6 +214,7 @@ namespace :curation do
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
           command = "mysqldump -h #{config["host"]} -u #{config["username"]} -w \"dataset_id = #{dataset.id}\" --password=#{config["password"]} #{config["database"]} #{model.storage_name} > #{path}#{filename}.sql"
+          puts command
           Sh::sh(command)
           Sh::compress(path+filename+".sql")
           Sh::rm(path+filename+".sql")
