@@ -123,7 +123,7 @@ namespace :curation do
     models = Sh::clean_gets.gsub("'","").split(",")
     set = set+(models&real_models)
     answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
-    while set.length < 5 && !answer
+    while !answer || set.length < 5
       models = Sh::clean_gets.gsub("'","").split(",")
       set = set+(models&real_models)
       answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
@@ -206,7 +206,7 @@ namespace :curation do
           path = `pwd`.split("\n").first+"/exports/"+additional_path
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
-          command = "mysqldump -h #{db["host"]} -u #{db["username"]} -w \"dataset_id = #{dataset.id}\" --password=#{db["password"]} #{db["database"]} #{model.storage_name} > #{path}#{filename}.sql"
+          command = "mysqldump -h #{config["host"]} -u #{config["username"]} -w \"dataset_id = #{dataset.id}\" --password=#{config["password"]} #{config["database"]} #{model.storage_name} > #{path}#{filename}.sql"
           Sh::sh(command)
           Sh::compress(path+filename+".sql")
           Sh::rm(path+filename+".sql")

@@ -1,18 +1,83 @@
 = 140kit Slave processes
 
-The code in this section of the app is the real meat of the project - the sites merely use data stored as a result of these processes, which are split into two groups, Workers and Streamers
+The code in this section of the app is the real meat of the project - the sites merely use data stored as a result of these processes, which are split into two groups, Workers and Filters
 
-The Streamers are responsible for the collection of data via the Twitter API, and the Workers generate analytical information as a result of these collection processes.
+The Filters are responsible for the collection of data via the Twitter API, and the Workers are in charge of analyzing data (if the code is used for processes other than aggregation) and management/cleanup for filter processes.
 
 == How to install
 
-To user this code, cd to the slave directory, and run the following commands to get your system up to speed:
+=== Basic Utilities required:
 
-  bundle install
-  
+MySQL
+Ruby
+screen (linux utility)
+
+A whole load of Ruby Gems:
+dm-aggregates
+dm-chunked_query
+dm-core
+dm-migrations
+dm-mysql-adapter
+dm-sqlite-adapter
+dm-sweatshop
+dm-types
+dm-validations
+eventmachine
+em-http-request, :require => em-http
+geokit
+htmlentities
+jeweler, 1.5.2
+json
+mechanize
+hashie
+mocha
+nokogiri
+ntp
+oauth
+mysql2
+spicycode-rcov
+rdebug
+rspec, 1.3.1
+cld
+tweetstream, 1.1.2
+twitter
+unicode
+yajl-ruby
+csv
+
+=== Setup:
+
+To use this code, cd to the code directory, and run the following commands to get your system up to speed:
+
+rvm use ruby-1.9.2-p290 
+# If this first command does not react well, you may need to install RVM in order to set up your environment. 
+# While not necessary, it is HIGHLY recommended that you install RVM on the host machine when running this 
+# service, both as a life tip and for kindness to this codebase.
+
+ruby -v
+# Ensure that it reads something like: ruby 1.9.2p290 (2011-07-09 revision 32553) [i686-linux]
+
+bundle install
+# Some issues may arise with this step - consult the current OII technical help to resolve these issues if they do in fact arise.  
+
 Then, you'll need to create a mysql table - unfortunately we can't do that automagically.
 
-After making the table, update your config/database.yml to reflect that. 
+After making the table, update your config/database.yml to reflect that. If, for example, the user is twitter, the password is password12, and the database is 140kit_database, then your database.yml may look like this (if you run the system in development, which is the default environment, and doesn't necessarily need to change):
+
+test: 
+  adapter: mysql
+  username: twitter
+  password: password12
+  host: localhost
+  database: 140kit_test
+
+development:
+  database: 140kit_database
+  adapter: mysql
+  username: twitter
+  password: password12
+  host: localhost
+
 
 run these rake commands:
 rake
@@ -20,11 +85,43 @@ rake db:migrate
 rake db:seed
 rake curation:new
 
+To see all Rake tasks, type in "rake -T". 
 
-After following the prompts therein, continue on by running a streaming instance to collect tweets for you:
+== Using the terminal-based Twitter collector:
 
-ruby streamer.rb
+While several different implementations are possible, the path that was taken in this project was to use "screen", a common linux utility, which allows a very easy access point for researchers to directly interact with sustained ssh sessions and running scripts, while remaining simple enough of a learning curve so as not to pose major problems. To use it, ssh into the machine, and simply type "screen -R". This will revive the screen session for the user that you ssh'ed in as, or create a new one if none previously existed.
 
-And after that process is complete, start up a worker to analyze the data:
+By default, screen uses a modifier key group of Ctrl-A to alter settings. Press Ctrl-A simultaneously, then press "c" to create a new window. Similarly, Ctrl-A "n" slides to the next window, Ctrl-A "delete/backspace" goes backward, and Ctrl-A and 1-0 switch to screens 1,2,3,4,5,6,7,8,9 and 0, respectively. The rest of this README assumes you are using screen, and refers to screen management casually - users unfamiliar with screen should consult that material accordingly.
 
-ruby worker.rb
+When seeding data, there are, by default, 5 twitter accounts generated (a small technical note: these accounts and passwords are publicly exposed insofar as this repository is exposed, and are instructional accounts at best - if users wish to create new accounts, they should feel free to create as many as is necessary, and store their passwords securely). This means that you can run 5 simultaneous filter processes at a time, which should be more than enough - feel free to create five filter instances. In a new screen window, cd to api_methods, then type 'ruby filter.rb' to start it. They will all be listening for potential jobs, and will be able to negotiate them accordingly. To start a worker, cd to workers, then type 'ruby worker.rb'. You should only need one.
+
+== Rake tasks
+
+Although there are many rake tasks, only a few will be used in practice:
+
+rake curation:manage     # Manage existing Curations
+rake curation:new        # Create a new curation.
+rake db:export           # Dump all tables into a set of sql dump files, and, in turn, dump the files into a large zip directory.
+rake db:import           # Import a dataset from your local file system.
+rake db:migrate          # Migrate the database up from current location to either specified migration or to latest
+rake db:seed             # Seed database with core data that you'll probably want
+rake db:upgrade          # Attempt to upgrade database.
+rake environment:load    # Load 140kit environment
+rake load                # Load up environment and start a console
+rake researchers:new     # Create a researcher account
+rake unlock:all          # Unlock all locked objects
+rake unlock:auth_users   # Unlock all locked auth_users
+
+=== curation:manage
+
+This is your main console for reviewing current databases (assuming you do not want to review it in the database or in ruby sessions directly). First, it will ask for the account - by default, the account name 'oii' is used, and no password is necessary. Upon typing the name of the account, the service will inform you of the current datasets you are running. To further look at a dataset, type in man [the dataset id] to look at the dataset further. For example, typing 'man 1' will enter the options for dataset 1. This yields the following prompt:
+
+  From here, you can do all sorts of stuff:
+  Type 'list' to see current stats about this curation
+  Type 'export' to export records and models from this curation
+  Type 'drop' to remove this dataset entirely from the service.
+  
+List simply tells you the size of the dataset. Export allows you to select specific fields to export out into tsv and sql, and drop allows you to remove the dataset.
+
+List and drop are trivial, but export begs some explanation: 
+Type 'finish' to exit the curation and return to management.

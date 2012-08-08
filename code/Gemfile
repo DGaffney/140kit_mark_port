@@ -17,6 +17,7 @@ group :core do
   gem 'jeweler', '1.5.2'
   gem 'json'
   gem 'mechanize'
+  gem 'hashie'
   gem 'mocha'
   gem 'nokogiri'
   gem 'ntp'
@@ -30,6 +31,7 @@ group :core do
   gem 'twitter'
   gem 'unicode'
   gem 'yajl-ruby'
+  gem 'csv'
 end
 
 group :raw_csv do
