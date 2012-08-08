@@ -130,7 +130,7 @@ To go back up to the main management panel, type 'finish' when done with any of 
 
 Again, you'll need to type in the researcher account. Type in 'oii' as the default unless you've created other accounts, and then you'll be presented with the first option:
 
-What type of curation will this be? (Can choose from: ["track", "follow", "locations", "sample", "import"])
+  What type of curation will this be? (Can choose from: ["track", "follow", "locations", "sample", "import"])
 
 "track" is the method for tracking terms. This is not case sensitive, and will stream tweets according to Twitter's streaming API as outlined at https://dev.twitter.com/docs/streaming-apis/parameters#track. 
 
@@ -149,23 +149,29 @@ https://dev.twitter.com/docs/streaming-apis/parameters#locations.
 Researchers are met with several options - each will be discussed in terms of the prompts given to the user:
 
 
-"Do you only want to collected geocoded data? (y/n)"
+  Do you only want to collected geocoded data? (y/n)
+
 This prompt allows researchers to prune track, follow, sample, and import datasets to only tweets that are geocoded. Technically, if this is employed on a geocoded-data set, it is a redundant option.
 
-"The next two of these are case-sensitive matches - be aware of that..."
-"Are there any terms that you would like to match on? In this case, we'll accept tweets that match any single term. (y/n)"
+  The next two of these are case-sensitive matches - be aware of that...
+  Are there any terms that you would like to match on? In this case, we'll accept tweets that match any single term. (y/n)
+
 This allows the researcher to define a set of case-sensitive OR-joined terms. Practically, this means that the researcher can define a wide range of sub-terms to prune any dataset on.
 
-"Are there any terms that you would like to match on? In this case, we'll accept tweets that match every single term. (y/n)"
+  Are there any terms that you would like to match on? In this case, we'll accept tweets that match every single term. (y/n)
+
 This allows the researcher to define a set of case-sensitive AND-joined terms. Practically, this means that the researcher can define a wide range of sub-terms to prune any dataset on.
 
-"Do you want tweets to come from specific sub regions? (Write these the same way as you would any other bounding box.) (y/n)"
+Do you want tweets to come from specific sub regions? (Write these the same way as you would any other bounding box.) (y/n)
+
 This allows the researcher to prune data to multiple sub regions - if for example, we were creating an import dataset and wanted to cover 50 US bounding-box cities, we could use this to define the regions. This will not mark them by region, but will select out those specific regions.
 
-"Do you need to know how many tweets are missed? (NOTE: This will only allow one search per account, so the resources for this type of search are limited.) (y/n)"
+  Do you need to know how many tweets are missed? (NOTE: This will only allow one search per account, so the resources for this type of search are limited.) (y/n)
+
 In some cases, it may be necessary to know how many tweets were lost due to rate-limiting. This option allows for that, but as Twitter's API does not split up how many are lost to rate limiting by the term, user, or bounding box provided, only one term, one user, or one bounding box may be defined for a given stream, meaning that one account must exist for every single rate-limit counting dataset.
 
-"How long would you like to have this collection run? (Enter in number of seconds. I know, that's annoying. Enter -1 for indefinite (you can always kill the scrape later.))"
+  How long would you like to have this collection run? (Enter in number of seconds. I know, that's annoying. Enter -1 for indefinite (you can always kill the scrape later.))
+
 This is simply how long the dataset should run. For five minutes, for example, type "300"
 
 
