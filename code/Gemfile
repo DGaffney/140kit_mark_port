@@ -31,7 +31,6 @@ group :core do
   gem 'twitter'
   gem 'unicode'
   gem 'yajl-ruby'
-  gem 'csv'
 end
 
 group :raw_csv do
