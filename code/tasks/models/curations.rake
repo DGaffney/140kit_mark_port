@@ -138,7 +138,7 @@ namespace :curation do
     answer = Sh::clean_gets_yes_no("Last question: where do you want the results stored? This will be a relative path - right now, it will just be dumped in #{`pwd`}/exports. Want to change that at all?", "Sorry, one more time:")
     additional_path = ""
     if answer
-      puts "Alright, change it to what?"
+      puts "Alright, change it to what? (Note: this will be relative to the current directory, or static if you prepend with a / on the path.)"
       answer = false
       while !answer
         additional_path = Sh::clean_gets
@@ -180,13 +180,14 @@ namespace :curation do
           next_set = remaining>limit ? limit : remaining
           remaining = (remaining-limit)>0 ? remaining-limit : 0
           puts "Archiving #{offset} - #{offset+next_set} (#{model})"
-          path = `pwd`.split("\n").first+"/exports/"+additional_path+"/"+model.to_s
+          path = additional_path == "" ? additional_path+"/"+model.to_s+"/" : `pwd`.split("\n").first+"/exports/"+additional_path+"/"+model.to_s+"/"
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
           mysql_section = "mysql -u #{config["user"]} --password='#{config["password"]}' -P #{config["port"]} -h #{config["host"]} #{config["path"].gsub("/", "")} -B -e "
           mysql_statement = "\"select * from #{model.storage_name} where dataset_id = #{dataset.id} limit #{limit};\""
           file_push = " | sed -n -e 's/^\"//;s/\"$//;s/\",\"/ /;s/\",\"/\\n/;P' > #{path}/#{filename}.tsv"
           command = "#{mysql_section}#{mysql_statement}#{file_push}"
+          puts command
           Sh::sh(command)
           Sh::compress(path+filename+".tsv")
           Sh::rm(path+filename+".tsv")
@@ -210,7 +211,7 @@ namespace :curation do
           next_set = remaining>limit ? limit : remaining
           remaining = (remaining-limit)>0 ? remaining-limit : 0
           puts "Archiving #{offset} - #{offset+next_set} (#{model})"
-          path = `pwd`.split("\n").first+"/exports/"+additional_path
+          path = additional_path == "" ? additional_path+"/"+model.to_s+"/" : `pwd`.split("\n").first+"/exports/"+additional_path+"/"+model.to_s+"/"
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
           command = "mysqldump -h #{config["host"]} -u #{config["user"]} -w \"dataset_id = #{dataset.id}\" --password=#{config["password"]} -P #{config["port"]} #{config["path"].gsub("/", "")} #{model.storage_name} > #{path}#{filename}.sql"
