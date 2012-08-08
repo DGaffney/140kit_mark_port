@@ -213,7 +213,7 @@ namespace :curation do
           path = `pwd`.split("\n").first+"/exports/"+additional_path
           Sh::mkdir(path)
           filename = "curation_#{curation.id}_dataset_#{dataset.id}_#{offset}_#{offset+next_set}"
-          command = "mysqldump -h #{config["host"]} -u #{config["username"]} -w \"dataset_id = #{dataset.id}\" --password=#{config["password"]} #{config["database"]} #{model.storage_name} > #{path}#{filename}.sql"
+          command = "mysqldump -h #{config["host"]} -u #{config["user"]} -w \"dataset_id = #{dataset.id}\" --password=#{config["password"]} -P #{config["port"]} #{config["path"].gsub("/", "")} #{model.storage_name} > #{path}#{filename}.sql"
           puts command
           Sh::sh(command)
           Sh::compress(path+filename+".sql")
