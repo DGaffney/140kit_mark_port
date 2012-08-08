@@ -75,6 +75,8 @@ namespace :curation do
               export_curation(curation)
             elsif answer == "drop"
               drop_curation(curation)
+            else
+              puts "Sorry, we didn't understand your request. Please type 'list', 'export', 'drop', or 'finish'."
             end
             answer = Sh::clean_gets
           end
@@ -123,7 +125,7 @@ namespace :curation do
     models = Sh::clean_gets.gsub("'","").split(",")
     set = set+(models&real_models)
     answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
-    while !answer || set.length < 5
+    while answer || set.length < 5
       models = Sh::clean_gets.gsub("'","").split(",")
       set = set+(models&real_models)
       answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
