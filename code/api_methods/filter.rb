@@ -329,6 +329,7 @@ class Filter < Instance
       Dataset.all(:id => finished_datasets.collect(&:id)).update(:scrape_finished => true)
       @datasets -= finished_datasets
       finished_datasets.each do |d|
+        d.status = "data_stored"
         if @params[:needs_counting]
           d.tweets_missed = 0 if d.tweets_missed.nil?
           value = (d.tweets_missed.to_i+@skipped_last_round.to_i-d.tweets_missed.to_i)
@@ -336,6 +337,7 @@ class Filter < Instance
           d.valid_tweets_missed = @valid_tweets_missed.to_i
           d.save!
         end
+        d.save!
         these_params = d.params
         these_params[:dataset_id] = d.id
         @params[:params]-=[these_params]

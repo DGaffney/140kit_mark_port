@@ -27,9 +27,19 @@ namespace :db do
     else
       answer = Sh::clean_gets_yes_no("This will run mysqldump on your environment's database, which may take time, depending on how much Twitter junk you've collected. Proceed?")
       if answer
+        path_answer = Sh::clean_gets_yes_no("Do you want to modify the path? By default, it will dump it at #{`pwd`.strip}.", "Sorry, try again:")
+        path = `pwd`.strip
+        if path_answer
+          path_confirm_answer = false
+          while !path_confirm_answer
+            puts "What path do you want to send it to?"
+            path = Sh::clean_gets
+            path_confirm_answer = Sh::clean_gets_yes_no("We got #{path}. Look right?", "Sorry, try again:")
+          end
+        end
         db = load_settings
         puts "Running export now... Promise."
-        sh "mysqldump -h #{db["host"]} -u #{db["username"]} --password=#{db["password"]} #{db["database"]} > #{file}"
+        sh "mysqldump -h #{db["host"]} -u #{db["username"]} --password=#{db["password"]} #{db["database"]} > #{path}#{file}"
       end
     end
   end
@@ -42,9 +52,19 @@ namespace :db do
     else
       answer = Sh::clean_gets_yes_no("This will run mysql on your environment's database, which may take time, depending on how much Twitter junk you've collected. Proceed?")
       if answer
+        path_answer = Sh::clean_gets_yes_no("Do you want to modify the path? By default, it will dump it at #{`pwd`.strip}.", "Sorry, try again:")
+        path = `pwd`.strip
+        if path_answer
+          path_confirm_answer = false
+          while !path_confirm_answer
+            puts "What path do you want to send it to?"
+            path = Sh::clean_gets
+            path_confirm_answer = Sh::clean_gets_yes_no("We got #{path}. Look right?", "Sorry, try again:")
+          end
+        end
         db = load_settings
         puts "Running import now... Promise."
-        sh "mysql -h #{db["host"]} -u #{db["username"]} --password=#{db["password"]} #{db["database"]} < #{file}"
+        sh "mysql -h #{db["host"]} -u #{db["username"]} --password=#{db["password"]} #{db["database"]} < #{path}#{file}"
       end
     end
   end

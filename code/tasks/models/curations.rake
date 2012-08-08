@@ -90,6 +90,9 @@ namespace :curation do
         puts "Sorry, I didn't understand your entry. Try again?"
         answer = Sh::clean_gets
       end
+      researcher.curations.each do |curation|
+        puts "ID: #{curation.id} Name: #{curation.name} Date Created: #{curation.created_at} Number of Datasets: #{curation.datasets.length}"
+      end
       puts "Type 'man curation_id' to see more information about a curation"
       puts "Type 'exit' at any time to boot out" 
       answer = Sh::clean_gets
@@ -131,9 +134,14 @@ namespace :curation do
     set = set+(models&real_models)
     answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
     while answer && set.length < 5
+      puts "What model?"
       models = Sh::clean_gets.gsub("'","").split(",")
       set = set+(models&real_models)
-      answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:")
+      if set.length != 5
+        answer = Sh::clean_gets_yes_no("So far, you've specified #{set.join(", ")}. Add more?", "Sorry, one more time:") 
+      else
+        answer = true
+      end
     end
     answer = Sh::clean_gets_yes_no("Last question: where do you want the results stored? This will be a relative path - right now, it will just be dumped in #{`pwd`.strip}/exports. Want to change that at all?", "Sorry, one more time:")
     additional_path = ""

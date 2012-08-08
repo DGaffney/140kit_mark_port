@@ -44,12 +44,13 @@ class Worker < Instance
     clean_orphans
     do_analysis_jobs
     switch_curation_statuses
+    update_counts
   end
   
   def switch_curation_statuses
     statuses = Setting.first(:name => "statuses", :var_type => "Dataset Settings").value
     unflippable_statuses = Setting.first(:name => "unflippable_statuses", :var_type => "Dataset Settings").value
-    Curation.all(:status => ["tsv_stored", "imported"]).unlocked.each do |curation|
+    Curation.all(:status => ["data_stored", "imported"]).unlocked.each do |curation|
       datasets = curation.datasets
       if curation.tweets_count == 0 && curation.finished? && curation.status != "tsv_storing"
         datasets.each do |dataset|
@@ -95,6 +96,17 @@ class Worker < Instance
         end
         curation.save!
       end
+    end
+  end
+  
+  def update_counts
+    datasets = Dataset.all(:scrape_finished => 1, :tweets_count => 0, :status => "data_stored")
+    datasets.each do |dataset|
+      dataset.tweets_count = Tweet.count(:dataset_id => dataset.id)
+      dataset.users_count = User.count(:dataset_id => dataset.id)
+      dataset.entities_count = Entity.count(:dataset_id => dataset.id)
+      dataset.status = "counted"
+      dataset.save!
     end
   end
   

@@ -106,7 +106,6 @@ rake db:import           # Import a dataset from your local file system.
 rake db:migrate          # Migrate the database up from current location to either specified migration or to latest
 rake db:seed             # Seed database with core data that you'll probably want
 rake db:upgrade          # Attempt to upgrade database.
-rake environment:load    # Load 140kit environment
 rake load                # Load up environment and start a console
 rake researchers:new     # Create a researcher account
 rake unlock:all          # Unlock all locked objects
@@ -123,5 +122,86 @@ This is your main console for reviewing current databases (assuming you do not w
   
 List simply tells you the size of the dataset. Export allows you to select specific fields to export out into tsv and sql, and drop allows you to remove the dataset.
 
-List and drop are trivial, but export begs some explanation: 
-Type 'finish' to exit the curation and return to management.
+List and drop are trivial, but export begs some explanation: There are five models stored for twitter data: tweets, users, entities, geos, and coordinates. They are described further below. You can keep adding and choosing more models until all are added, then define a path - unless there's a good reason, leave the path as it is by saying 'n', then it will export the data.
+
+To go back up to the main management panel, type 'finish' when done with any of these operations. Type exit at any time to boot out of management and to the command line.
+
+=== curation:new
+
+Again, you'll need to type in the researcher account. Type in 'oii' as the default unless you've created other accounts, and then you'll be presented with the first option:
+
+What type of curation will this be? (Can choose from: ["track", "follow", "locations", "sample", "import"])
+
+"track" is the method for tracking terms. This is not case sensitive, and will stream tweets according to Twitter's streaming API as outlined at https://dev.twitter.com/docs/streaming-apis/parameters#track. 
+
+"follow" is the method for following users. This is not case sensitive, and will stream tweets according to Twitter's streaming API as outlined at 
+https://dev.twitter.com/docs/streaming-apis/parameters#follow.
+
+"locations" is the method for following users. This is not case sensitive, and will stream tweets according to Twitter's streaming API as outlined at 
+https://dev.twitter.com/docs/streaming-apis/parameters#locations.
+
+"sample" is the method for the random sample of tweets up to 1% of tweets at any given time, and will stream tweets according to Twitter's streaming API as outlined at https://dev.twitter.com/docs/api/1/get/statuses/sample.
+
+"import" will take a time range defined by the researcher, and collect all tweets matching subsequent advanced parameters, and roll up the data into one dataset - researchers may also exclude specific datasets by their ID if so desired - the listing is available through rake curation:manage.
+
+==== Advanced settings
+
+Researchers are met with several options - each will be discussed in terms of the prompts given to the user:
+
+
+"Do you only want to collected geocoded data? (y/n)"
+This prompt allows researchers to prune track, follow, sample, and import datasets to only tweets that are geocoded. Technically, if this is employed on a geocoded-data set, it is a redundant option.
+
+"The next two of these are case-sensitive matches - be aware of that..."
+"Are there any terms that you would like to match on? In this case, we'll accept tweets that match any single term. (y/n)"
+This allows the researcher to define a set of case-sensitive OR-joined terms. Practically, this means that the researcher can define a wide range of sub-terms to prune any dataset on.
+
+"Are there any terms that you would like to match on? In this case, we'll accept tweets that match every single term. (y/n)"
+This allows the researcher to define a set of case-sensitive AND-joined terms. Practically, this means that the researcher can define a wide range of sub-terms to prune any dataset on.
+
+"Do you want tweets to come from specific sub regions? (Write these the same way as you would any other bounding box.) (y/n)"
+This allows the researcher to prune data to multiple sub regions - if for example, we were creating an import dataset and wanted to cover 50 US bounding-box cities, we could use this to define the regions. This will not mark them by region, but will select out those specific regions.
+
+"Do you need to know how many tweets are missed? (NOTE: This will only allow one search per account, so the resources for this type of search are limited.) (y/n)"
+In some cases, it may be necessary to know how many tweets were lost due to rate-limiting. This option allows for that, but as Twitter's API does not split up how many are lost to rate limiting by the term, user, or bounding box provided, only one term, one user, or one bounding box may be defined for a given stream, meaning that one account must exist for every single rate-limit counting dataset.
+
+"How long would you like to have this collection run? (Enter in number of seconds. I know, that's annoying. Enter -1 for indefinite (you can always kill the scrape later.))"
+This is simply how long the dataset should run. For five minutes, for example, type "300"
+
+
+=== db:export
+
+This will simply dump the database to file. You may specify a further path to send the file to if desired - the file will be called dump.sql
+
+=== db:import
+
+This will simply import a full SQL database to file. You may specify a further path to send the file to if desired - the file will be called dump.sql
+
+=== db:migrate
+
+This option allows you to migrate the current schema as defined in the models/ folder into the database, destroying the current schema and ALL data. This is not recommended unless you are sure you need to do this, or are booting up for the first time.
+
+=== db:seed
+
+This option populates a fresh database with the base variables required for the system to run, as well as some stock accounts available for research.
+
+
+=== db:upgrade
+
+This will rarely be used, if ever - use it if you update the schema with new variables, or fields, to models.
+
+=== load
+
+load, an alias for environment:load, boots up an IRB session with the database and all accompanying 140kit environment models, classes, and files. Use this to debug or interact with the data at a very fine point. 140kit is written with DataMapper - consult their documentation to learn more about how to interact with the data in this form.
+
+=== researchers:new
+
+This will allow team members to generate new researchers, which are essentially simply shortcut aliases to group datasets by, if for some reason researchers need to be distinguished. It asks for a username and password, though in practice the password is not used as the service is already behind a secure VPN provided by OII.
+
+=== unlock:all
+
+140kit uses a custom-built locking table to manage ownership for data objects while running the service so as to efficiently distribute tasks and isolate sole ownership. In some very rare cases, including unexpected shut-downs or power/connectivity losses, the processes may not be able to unlock objects before they are shut down. In this event, you may need to run unlock:all.
+
+=== unlock:auth_users
+
+Again, this custom locking table may be shutdown in a not-so-tidy way from time to time. The unlock:all method also accomplishes the task completed by unlock:auth_users, and so unlock:auth_users should only be used when it is suspected that multiple twitter accounts are being used across processes in the rare event that this occurs.
